@@ -24,9 +24,8 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
 import { pinia, store } from './store'
 import { checkLogin, addDownload } from './core/bilibili'
-import { parseFile, generateASS, setPosition, setConfig } from './core/xmlToAss.js'
+import { downloadDanmaku } from './core/danmaku'
 import { SettingData, TaskData, TaskList } from './type'
-import { resolution } from './assets/data/quality'
 import { sleep } from './utils'
 
 dayjs.locale('zh-cn')
@@ -53,6 +52,8 @@ onMounted(() => {
       taskMap.set(task.id, task)
     }
     store.taskStore(pinia).setTaskList(taskMap)
+    const taskId = store.taskStore(pinia).taskListArray[0] ? store.taskStore(pinia).taskListArray[0][0] : ''
+    if (taskId) store.taskStore(pinia).setRightTaskId(taskId)
   })
   // 监听下载进度
   window.electron.on('download-video-status', async ({ id, status, progress }: { id: string, status: number, progress: number }) => {
@@ -89,20 +90,12 @@ onMounted(() => {
       store.taskStore(pinia).setTaskEasy([{ ...task, status, progress }])
     }
   })
+  // 下载弹幕
+  window.electron.on('download-danmuku', (cid: number, title: string, path: string) => {
+    downloadDanmaku(cid, title, path)
+  })
   // 检查软件更新
   checkUpdate.value.checkUpdate()
-  // 监听XML弹幕数据
-  window.electron.on('danmuku-xml-data', async ({ quality, data, save }: { quality: string, data: string, save: string }) => {
-    setConfig({
-      playResX: resolution[quality].width,
-      playResY: resolution[quality].height
-    })
-    const danmaku = parseFile(data)
-    const ass = generateASS(setPosition(danmaku), {
-      title: 'bilibili ASS 弹幕在线转换'
-    })
-    window.electron.danmukuAssData({ data: ass, save: save })
-  })
 })
 </script>
 

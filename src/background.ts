@@ -50,6 +50,11 @@ ipcMain.on('open-browser', (event, url) => {
   shell.openExternal(url)
 })
 
+// 打开本地文件
+ipcMain.on('open-path', (event, path) => {
+  shell.openPath(path)
+})
+
 // 打开选择文件夹dialog
 ipcMain.handle('open-dir-dialog', () => {
   const filePaths = dialog.showOpenDialogSync({
@@ -90,6 +95,21 @@ ipcMain.handle('got', (event, url, option) => {
   })
 })
 
+// 发送http请求，得到buffer
+ipcMain.handle('got-buffer', (event, url, option) => {
+  return new Promise((resolve, reject) => {
+    got(url, option)
+      .buffer()
+      .then((res: any) => {
+        return resolve(res)
+      })
+      .catch((error: any) => {
+        log.error(`http error: ${error.message}`)
+        return reject(error.message)
+      })
+  })
+})
+
 // electron-store 操作
 ipcMain.handle('get-store', (event, path) => {
   return Promise.resolve(store.get(path))
@@ -104,30 +124,43 @@ ipcMain.on('delete-store', (event, path) => {
 })
 
 // 创建右键菜单
-ipcMain.handle('show-context-menu', (event) => {
+ipcMain.handle('show-context-menu', (event, type: string) => {
   return new Promise((resolve, reject) => {
-    const template: any = [
-      {
-        label: '删除任务',
-        type: 'normal',
-        click: () => resolve('delete'),
-      },
-      {
-        label: '重新下载',
-        type: 'normal',
-        click: () => resolve('reload'),
-      },
-      {
-        label: '打开文件夹',
-        type: 'normal',
-        click: () => resolve('open'),
-      },
-      {
-        label: '全选',
-        type: 'normal',
-        click: () => resolve('selectAll'),
-      }
-    ]
+    const menuMap = {
+      download: [
+        {
+          label: '删除任务',
+          type: 'normal',
+          click: () => resolve('delete')
+        },
+        {
+          label: '重新下载',
+          type: 'normal',
+          click: () => resolve('reload')
+        },
+        {
+          label: '打开文件夹',
+          type: 'normal',
+          click: () => resolve('open')
+        },
+        {
+          label: '全选',
+          type: 'normal',
+          click: () => resolve('selectAll')
+        },
+        {
+          label: '播放视频',
+          type: 'normal',
+          click: () => resolve('play')
+        }
+      ],
+      home: [
+        { label: '全选', role: 'selectAll' },
+        { label: '复制', role: 'copy' },
+        { label: '粘贴', role: 'paste' }
+      ]
+    }
+    const template: any = menuMap[type]
     const contextMenu = Menu.buildFromTemplate(template)
     contextMenu.popup({ window: win })
   })
@@ -196,18 +229,6 @@ ipcMain.on('minimize-app', () => {
   if (!win.isMinimized()) win.minimize()
 })
 
-// 保存ass弹幕
-ipcMain.on('danmuku-ass-data', (event, assData) => {
-  const { data, save } = assData
-  if (data) {
-    fs.writeFile(save, data, { encoding: 'utf8' }, (err: any) => {
-      if (!err) {
-        console.log('success')
-      }
-    })
-  }
-})
-
 // 打开删除任务dialog
 ipcMain.handle('open-reload-video-dialog', (event, taskCount) => {
   return new Promise((resolve, reject) => {
@@ -226,7 +247,10 @@ ipcMain.handle('open-reload-video-dialog', (event, taskCount) => {
   })
 })
 
-// 
+// 保存弹幕文件
+ipcMain.on('save-danmuku-file', (event, content, path) => {
+  fs.writeFile(path, content, { encoding: 'utf8' })
+})
 
 async function createWindow () {
   // Create the browser window.
@@ -267,6 +291,11 @@ function initStore () {
       ...settingData,
       downloadPath: app.getPath('downloads')
     })
+  } else {
+    store.set('setting', {
+      ...settingData,
+      ...store.get('setting')
+    })
   }
   if (!taskList) {
     store.set('taskList', {})
@@ -283,7 +312,7 @@ function initStore () {
 function handleCloseApp () {
   // 检查当前是否有下载中任务
   const taskList = store.get('taskList')
-  let count: number = 0
+  let count = 0
   for (const key in taskList) {
     const task = taskList[key]
     if (task.status !== 0 && task.status !== 5) {
@@ -299,10 +328,9 @@ function handleCloseApp () {
     buttons: ['取消', '关闭']
   })
     .then(res => {
-      if (res.response === 1 && count) {
-        store.set('taskList', taskList)
-      }
-      win.destroy()
+      console.log(res);
+      if (count) store.set('taskList', taskList)
+      if (res.response === 1) win.destroy()
     })
     .catch(error => {
       console.log(error)
@@ -311,7 +339,7 @@ function handleCloseApp () {
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
-  app.quit();
+  app.quit()
 })
 
 app.on('activate', () => {
@@ -344,7 +372,7 @@ app.on('ready', async () => {
   })
   // 添加快捷键
   globalShortcut.register('CommandOrControl+Shift+L', () => {
-    let focusWin = BrowserWindow.getFocusedWindow()
+    const focusWin = BrowserWindow.getFocusedWindow()
     if (focusWin && focusWin.webContents.isDevToolsOpened()) {
       focusWin.webContents.closeDevTools()
     } else if (focusWin && !focusWin.webContents.isDevToolsOpened()) {

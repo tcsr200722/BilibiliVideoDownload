@@ -63,6 +63,22 @@ yarn electron:build
 ```
 ## 版本
 
+v3.3.3 `2022-07-02`
+
+1. 修复关闭软件事件不正常错误[issues/88](https://github.com/blogwy/BilibiliVideoDownload/issues/88)
+2. 下载列表右键添加播放视频功能[issues/86](https://github.com/blogwy/BilibiliVideoDownload/issues/86)
+
+v3.3.2 `2022-06-04`
+
+1. 修复下载视频的音频码率错误，现在音频码率修改为当前最高音频码率。[issues/76](https://github.com/blogwy/BilibiliVideoDownload/issues/76)
+2. 修复更新弹窗点击按钮没反应问题[issues/83](https://github.com/blogwy/BilibiliVideoDownload/issues/83)
+3. 添加是否下载封面设置项[issues/81](https://github.com/blogwy/BilibiliVideoDownload/issues/81)
+4. 下载地址输入框加入复制/粘贴/全选右键菜单[issues/82](https://github.com/blogwy/BilibiliVideoDownload/issues/82)
+
+v3.3.1 `2022-05-28`
+
+1. 修复弹幕样式异常问题
+
 v3.3.0 `2022-05-12`
 
 1. 升级vue3+typescript electron16
@@ -161,10 +177,11 @@ Node.js重构，以前的在vuejs分支
 ## 感谢
 
 * 特别感谢JetBrains为开源项目提供的免费许可证，申请地址：[https://www.jetbrains.com/zh-cn/community/opensource/#support](https://www.jetbrains.com/zh-cn/community/opensource/#support)
+* 感谢[bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)B站接口支持
+* 感谢[Bilibili-Evolved](https://github.com/the1812/Bilibili-Evolved)弹幕支持
 * [FFmpeg](https://ffmpeg.org/)
 * [Electron](https://www.electronjs.org/)
 * [Vue.js](https://vuejs.org/)
 * [Ant Design Vue](https://antdv.com/docs/vue/introduce-cn/)
 * [got](https://github.com/sindresorhus/got)
-* [bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)
 
